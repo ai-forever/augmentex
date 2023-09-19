@@ -46,6 +46,8 @@ We collected statistics from different languages and from different input source
 | PC keyboard |      ✅     |      ❌     |
 | Mobile kb   |      ❌     |      ❌     |
 
+In the future, it is planned to scale the functionality to new languages and various input sources.
+
 ## Usage
 🖇️ Augmentex allows you to operate on two levels of granularity when it comes to text corruption and offers you sets of 
 specific methods suited for particular level:
