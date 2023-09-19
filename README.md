@@ -205,7 +205,7 @@ How to make a pull request.
 7. Expect comments from the authors.
 
 ## References
-- [SAGE](https://github.com/ai-forever/sage) — Spelling correction, corruption and evaluation for multiple languages.
+- [SAGE](https://github.com/ai-forever/sage) — superlib, developed jointly with our friends by the AGI NLP team, which provides advanced spelling corruptions and spell checking techniques, including using Augmentex.
 
 ## Authors
 - [Aleksandr Abramov](https://github.com/Ab1992ao) — Source code and algorithm author;
