@@ -16,14 +16,16 @@ class WordAug(BaseAug):
         min_aug: int = 1,
         max_aug: int = 5,
         unit_prob: float = 0.3,
+        random_seed: int = None,
     ) -> None:
         """
         Args:
             min_aug (int, optional): The minimum amount of augmentation. Defaults to 1.
             max_aug (int, optional): The maximum amount of augmentation. Defaults to 5.
             unit_prob (float, optional): Percentage of the phrase to which augmentations will be applied. Defaults to 0.3.
+            random_seed (int, optional): Random seed. Default to None.
         """
-        super().__init__(min_aug=min_aug, max_aug=max_aug)
+        super().__init__(min_aug=min_aug, max_aug=max_aug, random_seed=random_seed)
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
         with open(os.path.join(dir_path, "static_data", "stopwords_ru.json")) as f:

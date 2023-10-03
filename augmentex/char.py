@@ -53,6 +53,7 @@ class CharAug(BaseAug):
         min_aug: int = 1,
         max_aug: int = 5,
         mult_num: int = 5,
+        random_seed: int = None,
     ) -> None:
         """
         Args:
@@ -60,8 +61,9 @@ class CharAug(BaseAug):
             min_aug (int, optional): The minimum amount of augmentation. Defaults to 1.
             max_aug (int, optional): The maximum amount of augmentation. Defaults to 5.
             mult_num (int, optional): Maximum repetitions of characters. Defaults to 5.
+            random_seed (int, optional): Random seed. Default to None.
         """
-        super().__init__(min_aug=min_aug, max_aug=max_aug)
+        super().__init__(min_aug=min_aug, max_aug=max_aug, random_seed=random_seed)
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
         with open(
