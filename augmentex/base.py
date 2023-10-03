@@ -5,20 +5,37 @@ from typing import List, Union
 import numpy as np
 
 
+SUPPORT_LANGUAGES = ["rus", "eng"]
+SUPPORT_PLATFORMS = ["pc", "mobile"]
+
+
 class BaseAug(ABC):
-    def __init__(self, min_aug: int = 1, max_aug: int = 5, random_seed: int = None) -> None:
+    def __init__(self, min_aug: int = 1, max_aug: int = 5, random_seed: int = None, lang: str = "rus", platform: str = "pc") -> None:
         """
         Args:
             min_aug (int, optional): The minimum amount of augmentation. Defaults to 1.
             max_aug (int, optional): The maximum amount of augmentation. Defaults to 5.
             random_seed (int, optional): Random seed. Default to None.
+            lang (str, optional): Language of texts. Default to 'rus'.
+            platform (str, optional): Type of platform where statistic was collected. Defaults to 'pc'.
         """
         self.min_aug = min_aug
         self.max_aug = max_aug
         self.random_seed = random_seed
+        self.lang = lang
+        self.platform = platform
 
         if self.random_seed:
             self._fix_random_seed(self.random_seed)
+
+        if self.lang not in SUPPORT_LANGUAGES:
+            raise ValueError(
+                f"""Augmentex support only {', '.join(SUPPORT_LANGUAGES)} languages.
+                You put {self.lang}.""")
+        if self.platform not in SUPPORT_PLATFORMS:
+            raise ValueError(
+                f"""Augmentex support only {', '.join(SUPPORT_PLATFORMS)} platforms.
+                You put {self.platform}.""")
 
     def _fix_random_seed(self, random_seed: int) -> None:
         """Fixing random seed.
