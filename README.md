@@ -44,7 +44,7 @@ We collected statistics from different languages and from different input source
 |             | Russian     | English     |
 | -----------:|:-----------:|:-----------:|
 | PC keyboard |      ✅     |      ❌     |
-| Mobile kb   |      ❌     |      ❌     |
+| Mobile kb   |      ✅     |      ❌     |
 
 In the future, it is planned to scale the functionality to new languages and various input sources.
 
@@ -76,6 +76,9 @@ word_aug = WordAug(
     unit_prob=0.4, # Percentage of the phrase to which augmentations will be applied
     min_aug=1, # Minimum number of augmentations
     max_aug=5, # Maximum number of augmentations
+    lang="rus", # supports: "rus", "eng"
+    platform="pc", # supports: "pc", "mobile"
+    random_seed=42,
     )
 ```
 
@@ -136,7 +139,10 @@ char_aug = CharAug(
     unit_prob=0.3, # Percentage of the phrase to which augmentations will be applied
     min_aug=1, # Minimum number of augmentations
     max_aug=5, # Maximum number of augmentations
-    mult_num=3 # Maximum number of repetitions of characters (only for the multiply method)
+    mult_num=3, # Maximum number of repetitions of characters (only for the multiply method)
+    lang="rus", # supports: "rus", "eng"
+    platform="pc", # supports: "pc", "mobile"
+    random_seed=42,
     )
 ```
 

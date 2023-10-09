@@ -7,43 +7,6 @@ import numpy as np
 from augmentex.base import BaseAug
 
 
-RUSSIAN_VOCAB = [
-    "а",
-    "б",
-    "в",
-    "г",
-    "д",
-    "е",
-    "ё",
-    "ж",
-    "з",
-    "и",
-    "й",
-    "к",
-    "л",
-    "м",
-    "н",
-    "о",
-    "п",
-    "р",
-    "с",
-    "т",
-    "у",
-    "ф",
-    "х",
-    "ц",
-    "ч",
-    "ш",
-    "щ",
-    "ъ",
-    "ы",
-    "ь",
-    "э",
-    "ю",
-    "я",
-]
-
-
 class CharAug(BaseAug):
     """Augmentation at the character level."""
 
@@ -53,6 +16,9 @@ class CharAug(BaseAug):
         min_aug: int = 1,
         max_aug: int = 5,
         mult_num: int = 5,
+        random_seed: int = None,
+        lang: str = "rus",
+        platform: str = "pc",
     ) -> None:
         """
         Args:
@@ -60,20 +26,22 @@ class CharAug(BaseAug):
             min_aug (int, optional): The minimum amount of augmentation. Defaults to 1.
             max_aug (int, optional): The maximum amount of augmentation. Defaults to 5.
             mult_num (int, optional): Maximum repetitions of characters. Defaults to 5.
+            random_seed (int, optional): Random seed. Default to None.
+            lang (str, optional): Language of texts. Default to 'rus'.
+            platform (str, optional): Type of platform where statistic was collected. Defaults to 'pc'.
         """
-        super().__init__(min_aug=min_aug, max_aug=max_aug)
+        super().__init__(min_aug=min_aug, max_aug=max_aug,
+                         random_seed=random_seed, lang=lang, platform=platform)
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
-        with open(
-            os.path.join(dir_path, "static_data", "typos_ru_en_digits_chars.json")
-        ) as f:
+        with open(os.path.join(dir_path, "static_data", "typos_chars.json")) as f:
             self.typo_dict = json.load(f)
-        with open(os.path.join(dir_path, "static_data", "orfo_ru_chars.json")) as f:
+        with open(os.path.join(dir_path, "static_data", self.lang, self.platform, "orfo_chars.json")) as f:
             self.orfo_dict = json.load(f)
-        with open(
-            os.path.join(dir_path, "static_data", "shift_ru_en_digits.json")
-        ) as f:
+        with open(os.path.join(dir_path, "static_data", "shift.json")) as f:
             self.shift_dict = json.load(f)
+        with open(os.path.join(dir_path, "static_data", self.lang, "vocab.json")) as f:
+            self.vocab = json.load(f)
 
         self.mult_num = mult_num
         self.unit_prob = unit_prob
@@ -93,7 +61,7 @@ class CharAug(BaseAug):
         Returns:
             List[str]: A list of possible methods.
         """
-        
+
         return self.__actions
 
     def _typo(self, char: str) -> str:
@@ -106,7 +74,7 @@ class CharAug(BaseAug):
             str: A new symbol.
         """
         typo_char = np.random.choice(self.typo_dict.get(char, [char]))
-        
+
         return typo_char
 
     def _shift(self, char: str) -> str:
@@ -119,7 +87,7 @@ class CharAug(BaseAug):
             str: The same character but with a different case.
         """
         shift_char = self.shift_dict.get(char, char)
-        
+
         return shift_char
 
     def _orfo(self, char: str) -> str:
@@ -132,9 +100,9 @@ class CharAug(BaseAug):
             str: A new symbol.
         """
         orfo_char = np.random.choice(
-            RUSSIAN_VOCAB, p=self.orfo_dict.get(char, [1 / 33] * 33)
+            self.vocab, p=self.orfo_dict.get(char, None)
         )
-        
+
         return orfo_char
 
     def _delete(self) -> str:
@@ -143,7 +111,7 @@ class CharAug(BaseAug):
         Returns:
             str: Empty string.
         """
-        
+
         return ""
 
     def _insert(self, char: str) -> str:
@@ -155,8 +123,8 @@ class CharAug(BaseAug):
         Returns:
             str: A symbol + new symbol.
         """
-        
-        return char + np.random.choice(RUSSIAN_VOCAB)
+
+        return char + np.random.choice(self.vocab)
 
     def _multiply(self, char: str) -> str:
         """Repeats a randomly selected character.
