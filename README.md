@@ -43,7 +43,7 @@ We collected statistics from different languages and from different input source
 
 |             | Russian     | English     |
 | -----------:|:-----------:|:-----------:|
-| PC keyboard |      ✅     |      ❌     |
+| PC keyboard |      ✅     |      ✅     |
 | Mobile kb   |      ✅     |      ❌     |
 
 In the future, it is planned to scale the functionality to new languages and various input sources.
