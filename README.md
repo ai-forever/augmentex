@@ -221,28 +221,24 @@ word_aug.aug_batch(text_list, batch_prob=0.5, action="replace") # with action
 Example of txt files:
 <table>
 <tr>
-<th> Texts without errors </th>
-<th> Texts with errors </th>
+<th> texts_without_errors.txt </th>
+<th> texts_with_errors.txt </th>
 </tr>
 <tr>
 <td>
 
-```
-some text without errors 1
-some text without errors 2
-some text without errors 3
+some text without errors 1</br>
+some text without errors 2</br>
+some text without errors 3</br>
 ...
-```
 
 </td>
 <td>
 
-```
-some text with errors 1
-some text with errors 2
-some text with errors 3
+some text with errors 1</br>
+some text with errors 2</br>
+some text with errors 3</br>
 ...
-```
 
 </td>
 </tr>
