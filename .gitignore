@@ -5,3 +5,5 @@ build
 *.egg-info
 dist
 .DS_Store
+correct_texts.txt
+error_texts.txt

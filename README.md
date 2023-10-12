@@ -8,9 +8,6 @@
     <a href="https://arxiv.org/abs/2308.09435">
     <img alt="Paper" src="https://img.shields.io/badge/arXiv-2308.09435-red">
     </a>
-<!--     <a href="https://github.com/ai-forever/augmentex/issues">
-    <img alt="Issues" src="https://img.shields.io/github/issues/ai-forever/augmentex-green">
-    </a> -->
 </p>
 
 # Augmentex — a library for augmenting texts with errors
@@ -43,7 +40,7 @@ We collected statistics from different languages and from different input source
 
 |             | Russian     | English     |
 | -----------:|:-----------:|:-----------:|
-| PC keyboard |      ✅     |      ❌     |
+| PC keyboard |      ✅     |      ✅     |
 | Mobile kb   |      ✅     |      ❌     |
 
 In the future, it is planned to scale the functionality to new languages and various input sources.
@@ -70,13 +67,13 @@ specific methods suited for particular level:
 
 ### **Word level**
 ```python
-from augmentex.word import WordAug
+from augmentex import WordAug
 
 word_aug = WordAug(
     unit_prob=0.4, # Percentage of the phrase to which augmentations will be applied
     min_aug=1, # Minimum number of augmentations
     max_aug=5, # Maximum number of augmentations
-    lang="rus", # supports: "rus", "eng"
+    lang="eng", # supports: "rus", "eng"
     platform="pc", # supports: "pc", "mobile"
     random_seed=42,
     )
@@ -84,63 +81,63 @@ word_aug = WordAug(
 
 1. Replace a random word with its incorrect counterpart;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-word_aug.augment(text=text, action='replace')
-# Съешь ещё этих мягких французских булок, дло выпей чаю.
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="replace")
+# Screw to guys, I to going com. (c)
 ```
 
 2. Delete random word;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-word_aug.augment(text=text, action='delete')
-# Съешь ещё французских булок, да выпей
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="delete")
+# you I am home. (c)
 ```
 
 3. Swap two random words;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-word_aug.augment(text=text, action='swap')
-# Съешь ещё этих мягких французских булок, да чаю. выпей
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="swap")
+# Screw I guys, am home. going you (c)
 ```
 
 4. Add random words from stop-list;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-word_aug.augment(text=text, action='stopword')
-# Съешь да ещё этих во мягких это французских булок, да выпей чаю.
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="stopword")
+# like Screw you guys, I am going completely home. by the way (c)
 ```
 
 5. Adds spaces between letters to the word;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-word_aug.augment(text=text, action='split')
-# С ъ е ш ь ещё этих мягких французских булок, д а в ы п е й чаю.
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="split")
+# Screw y o u guys, I am going h o m e . (c)
 ```
 
 6. Change a case of the first letter of a random word;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-word_aug.augment(text=text, action='reverse')
-# Съешь ещё этих мягких Французских булок, Да выпей Чаю.
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="reverse")
+# Screw You guys, i Am going home. (c)
 ```
 
 7. Changes the word to the corresponding emoji.
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-word_aug.augment(text=text, action='text2emoji')
-# Съешь ещё этих мягких французских булок, да выпей чаю.
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="text2emoji")
+# Screw you guys, I am going home. (c)
 ```
 
 ### **Character level**
 ```python
-from augmentex.char import CharAug
+from augmentex import CharAug
 
 char_aug = CharAug(
     unit_prob=0.3, # Percentage of the phrase to which augmentations will be applied
     min_aug=1, # Minimum number of augmentations
     max_aug=5, # Maximum number of augmentations
     mult_num=3, # Maximum number of repetitions of characters (only for the multiply method)
-    lang="rus", # supports: "rus", "eng"
+    lang="eng", # supports: "rus", "eng"
     platform="pc", # supports: "pc", "mobile"
     random_seed=42,
     )
@@ -148,51 +145,98 @@ char_aug = CharAug(
 
 1. Randomly swaps upper / lower case in a string;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-char_aug.augment(text=text, action='shift')
-# СъЕшь ещё этих мягКих фраНцузских булок, да выпей Чаю.
+text = "Screw you guys, I am going home. (c)"
+char_aug.augment(text=text, action="shift")
+# Screw YoU guys, I am going Home. (C)
 ```
 
 2. Substitute correct characters with their common incorrect counterparts;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-char_aug.augment(text=text, action='orfo')
-# Съешь ещё этиз мягкех французских булок, ла тыпей саю.
+text = "Screw you guys, I am going home. (c)"
+char_aug.augment(text=text, action="orfo")
+# Sedew you guya, I am going home. (c)
 ```
 
 3. Substitute correct characters as if they are mistyped on a keyboard;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-char_aug.augment(text=text, action='typo')
-# Съель езё этих мягких французскпх булок, да аыпей чпю.
+text = "Screw you guys, I am going home. (c)"
+char_aug.augment(text=text, action="typo")
+# Sxrew you gugs, I am going home. (x)
 ```
 
 4. Delete random character;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-char_aug.augment(text=text, action='delete')
-# Съеь щё эих мягких французскх булок, да выей чаю.
+text = "Screw you guys, I am going home. (c)"
+char_aug.augment(text=text, action="delete")
+# crew you guys Iam goinghme. (c)
 ```
 
 5. Insert random character;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-char_aug.augment(text=text, action='insert')
-# Съешь ещё этих мягкцих фчранцэузскиьх булок, да выпей шчаю.
+text = "Screw you guys, I am going home. (c)"
+char_aug.augment(text=text, action="insert")
+# Screw you ughuys, I vam gcoing hxome. (c)
 ```
 
 6. Multiply random character;
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-char_aug.augment(text=text, action='multiply')
-# Съешь ещё этих мяггких французских булок, даа выпей чаю.
+text = "Screw you guys, I am going home. (c)"
+char_aug.augment(text=text, action="multiply")
+# Screw yyou guyss, I am ggoinng home. (c)
 ```
 
 7. Swap two adjacent characters.
 ```python
-text = "Съешь ещё этих мягких французских булок, да выпей чаю."
-char_aug.augment(text=text, action='swap')
-# Съешь ещёэ тихм якгих французских буолк, ад выпей чаю.
+text = "Screw you guys, I am going home. (c)"
+char_aug.augment(text=text, action="swap")
+# Srcewy ou guys,I  am oging hmoe. (c)
+```
+
+### **Batch processing**
+For batch text processing, you need to call the `aug_batch` method instead of the `augment` method and pass a list of strings to it.
+
+```python
+from augmentex import WordAug
+
+word_aug = WordAug(
+    unit_prob=0.4, # Percentage of the phrase to which augmentations will be applied
+    min_aug=1, # Minimum number of augmentations
+    max_aug=5, # Maximum number of augmentations
+    lang="eng", # supports: "rus", "eng"
+    platform="pc", # supports: "pc", "mobile"
+    random_seed=42,
+    )
+
+text_list = ["Screw you guys, I am going home. (c)"] * 10
+word_aug.aug_batch(text_list, batch_prob=0.5) # without action
+
+text_list = ["Screw you guys, I am going home. (c)"] * 10
+word_aug.aug_batch(text_list, batch_prob=0.5, action="replace") # with action
+```
+
+### **Compute your own statistics**
+If you want to use your own statistics for the _replace_ and _orfo_ methods, then you will need to specify two paths to parallel corpora with texts without errors and with errors.
+
+Example of txt files:
+```
+text1
+text2
+text3
+```
+
+```python
+from augmentex import WordAug
+
+word_aug = WordAug(
+    unit_prob=0.4, # Percentage of the phrase to which augmentations will be applied
+    min_aug=1, # Minimum number of augmentations
+    max_aug=5, # Maximum number of augmentations
+    lang="eng", # supports: "rus", "eng"
+    platform="pc", # supports: "pc", "mobile"
+    random_seed=42,
+    correct_texts_path="correct_texts.txt",
+    error_texts_path="error_texts.txt",
+    )
 ```
 
 ## Contributing
