@@ -16,21 +16,20 @@ approach to insert errors in text. It is fully described again in the [Paper](ht
 and in this 🗣️[Talk](https://youtu.be/yFfkV0Qjuu0?si=XmKfocCSLnKihxS_).
 
 ## Contents
-- [Contents](#contents)
-- [Installation](#installation)
-- [Implemented functionality](#implemented-functionality)
-- [Usage](#usage)
-    - [Word level](#word-level)
-    - [Character level](#character-level)
-    - [Batch processing](#batch-processing)
-    - [Compute your own statistics](#compute-your-own-statistics)
-- [Contributing](#contributing)
-- [Usage](#usage)
-- [Contributing](#contributing)
+- [Augmentex — a library for augmenting texts with errors](#augmentex--a-library-for-augmenting-texts-with-errors)
+  - [Contents](#contents)
+  - [Installation](#installation)
+  - [Implemented functionality](#implemented-functionality)
+  - [Usage](#usage)
+    - [**Word level**](#word-level)
+    - [**Character level**](#character-level)
+    - [**Batch processing**](#batch-processing)
+    - [**Compute your own statistics**](#compute-your-own-statistics)
+  - [Contributing](#contributing)
     - [Issue](#issue)
     - [Pull request](#pull-request)
-- [References](#references)
-- [Authors](#authors)
+  - [References](#references)
+  - [Authors](#authors)
 
 ## Installation
 ```commandline
@@ -220,11 +219,34 @@ word_aug.aug_batch(text_list, batch_prob=0.5, action="replace") # with action
 📊 If you want to use your own statistics for the _replace_ and _orfo_ methods, then you will need to specify two paths to parallel corpora with texts without errors and with errors.
 
 Example of txt files:
+<table>
+<tr>
+<th> Texts without errors </th>
+<th> Texts with errors </th>
+</tr>
+<tr>
+<td>
+
 ```
-text1
-text2
-text3
+some text without errors 1
+some text without errors 2
+some text without errors 3
+...
 ```
+
+</td>
+<td>
+
+```
+some text with errors 1
+some text with errors 2
+some text with errors 3
+...
+```
+
+</td>
+</tr>
+</table>
 
 ```python
 from augmentex import WordAug
