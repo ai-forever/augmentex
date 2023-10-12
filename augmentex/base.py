@@ -1,12 +1,11 @@
 import random
+import json
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import List, Union, Dict
 
 import numpy as np
 
-
-SUPPORT_LANGUAGES = ["rus", "eng"]
-SUPPORT_PLATFORMS = ["pc", "mobile"]
+from augmentex.variables import SUPPORT_LANGUAGES, SUPPORT_PLATFORMS
 
 
 class BaseAug(ABC):
@@ -26,7 +25,7 @@ class BaseAug(ABC):
         self.platform = platform
 
         if self.random_seed:
-            self._fix_random_seed(self.random_seed)
+            self.__fix_random_seed(self.random_seed)
 
         if self.lang not in SUPPORT_LANGUAGES:
             raise ValueError(
@@ -37,7 +36,21 @@ class BaseAug(ABC):
                 f"""Augmentex support only {', '.join(SUPPORT_PLATFORMS)} platforms.
                 You put {self.platform}.""")
 
-    def _fix_random_seed(self, random_seed: int) -> None:
+    def _read_json(self, path: str) -> Dict:
+        """Read JSON to Dict.
+
+        Args:
+            path (str): Path to file.
+
+        Returns:
+            Dict: dict with data.
+        """
+        with open(path) as f:
+            data = json.load(f)
+
+        return data
+
+    def __fix_random_seed(self, random_seed: int) -> None:
         """Fixing random seed.
 
         Args:
@@ -46,7 +59,7 @@ class BaseAug(ABC):
         random.seed(random_seed)
         np.random.seed(random_seed)
 
-    def _augs_count(self, size: int, rate: float) -> int:
+    def __augs_count(self, size: int, rate: float) -> int:
         """Counts the number of augmentations and performs circumcision by the maximum or minimum number.
 
         Args:
@@ -62,7 +75,7 @@ class BaseAug(ABC):
 
         return cnt
 
-    def _get_random_idx(self, inputs: List[str], aug_count: int) -> List[int]:
+    def __get_random_idx(self, inputs: List[str], aug_count: int) -> List[int]:
         """Randomly select indexes for augmentation
 
         Args:
@@ -89,12 +102,12 @@ class BaseAug(ABC):
         Returns:
             List[int]: List of indices.
         """
-        aug_count = self._augs_count(len(inputs), rate)
+        aug_count = self.__augs_count(len(inputs), rate)
         if clip:
             aug_count = max(aug_count, self.min_aug)
             aug_count = min(aug_count, self.max_aug)
 
-        aug_idxs = self._get_random_idx(inputs, aug_count)
+        aug_idxs = self.__get_random_idx(inputs, aug_count)
 
         return aug_idxs
 
