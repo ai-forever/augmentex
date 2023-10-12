@@ -219,6 +219,20 @@ word_aug.aug_batch(text_list, batch_prob=0.5, action="replace") # with action
 📊 If you want to use your own statistics for the _replace_ and _orfo_ methods, then you will need to specify two paths to parallel corpora with texts without errors and with errors.
 
 Example of txt files:
+
+<style>
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .table-responsive > table {
+    width: 100%;
+  }
+</style>
+
+<div class="table-responsive">
 <table>
 <tr>
 <th> Texts without errors </th>
@@ -247,6 +261,7 @@ some text with errors 3
 </td>
 </tr>
 </table>
+</div>
 
 ```python
 from augmentex import WordAug
