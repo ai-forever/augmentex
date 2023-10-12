@@ -22,6 +22,8 @@ and in this 🗣️[Talk](https://youtu.be/yFfkV0Qjuu0?si=XmKfocCSLnKihxS_).
 - [Usage](#usage)
     - [Word level](#word-level)
     - [Character level](#character-level)
+    - [Batch processing](#batch-processing)
+    - [Compute your own statistics](#compute-your-own-statistics)
 - [Contributing](#contributing)
 - [Usage](#usage)
 - [Contributing](#contributing)
@@ -193,7 +195,7 @@ char_aug.augment(text=text, action="swap")
 ```
 
 ### **Batch processing**
-For batch text processing, you need to call the `aug_batch` method instead of the `augment` method and pass a list of strings to it.
+📁 For batch text processing, you need to call the `aug_batch` method instead of the `augment` method and pass a list of strings to it.
 
 ```python
 from augmentex import WordAug
@@ -215,7 +217,7 @@ word_aug.aug_batch(text_list, batch_prob=0.5, action="replace") # with action
 ```
 
 ### **Compute your own statistics**
-If you want to use your own statistics for the _replace_ and _orfo_ methods, then you will need to specify two paths to parallel corpora with texts without errors and with errors.
+📊 If you want to use your own statistics for the _replace_ and _orfo_ methods, then you will need to specify two paths to parallel corpora with texts without errors and with errors.
 
 Example of txt files:
 ```
