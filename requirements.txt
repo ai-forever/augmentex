@@ -1,1 +1,2 @@
-numpy=>1.21
+numpy>=1.21
+python-Levenshtein>=0.22.0
