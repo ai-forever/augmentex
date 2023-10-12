@@ -1,23 +1,69 @@
 import random
+import json
 from abc import ABC, abstractmethod
-from typing import List, Union
+from typing import List, Union, Dict
+
+import numpy as np
+
+from augmentex.variables import SUPPORT_LANGUAGES, SUPPORT_PLATFORMS
 
 
 class BaseAug(ABC):
-    def __init__(self, min_aug: int = 1, max_aug: int = 5) -> None:
+    def __init__(self, min_aug: int = 1, max_aug: int = 5, random_seed: int = None, lang: str = "rus", platform: str = "pc") -> None:
         """
         Args:
             min_aug (int, optional): The minimum amount of augmentation. Defaults to 1.
             max_aug (int, optional): The maximum amount of augmentation. Defaults to 5.
+            random_seed (int, optional): Random seed. Default to None.
+            lang (str, optional): Language of texts. Default to 'rus'.
+            platform (str, optional): Type of platform where statistic was collected. Defaults to 'pc'.
         """
         self.min_aug = min_aug
         self.max_aug = max_aug
+        self.random_seed = random_seed
+        self.lang = lang
+        self.platform = platform
 
-    def _augs_count(self, size: int, rate: float) -> int:
+        if self.random_seed:
+            self.__fix_random_seed(self.random_seed)
+
+        if self.lang not in SUPPORT_LANGUAGES:
+            raise ValueError(
+                f"""Augmentex support only {', '.join(SUPPORT_LANGUAGES)} languages.
+                You put {self.lang}.""")
+        if self.platform not in SUPPORT_PLATFORMS:
+            raise ValueError(
+                f"""Augmentex support only {', '.join(SUPPORT_PLATFORMS)} platforms.
+                You put {self.platform}.""")
+
+    def _read_json(self, path: str) -> Dict:
+        """Read JSON to Dict.
+
+        Args:
+            path (str): Path to file.
+
+        Returns:
+            Dict: dict with data.
+        """
+        with open(path) as f:
+            data = json.load(f)
+
+        return data
+
+    def __fix_random_seed(self, random_seed: int) -> None:
+        """Fixing random seed.
+
+        Args:
+            random_seed (int): Integer digit.
+        """
+        random.seed(random_seed)
+        np.random.seed(random_seed)
+
+    def __augs_count(self, size: int, rate: float) -> int:
         """Counts the number of augmentations and performs circumcision by the maximum or minimum number.
 
         Args:
-            size (int): the number of units (chars or words) in the text.
+            size (int): The number of units (chars or words) in the text.
             rate (float): The percentage of units to which augmentation will be applied.
 
         Returns:
@@ -29,7 +75,7 @@ class BaseAug(ABC):
 
         return cnt
 
-    def _get_random_idx(self, inputs: List[str], aug_count: int) -> List[int]:
+    def __get_random_idx(self, inputs: List[str], aug_count: int) -> List[int]:
         """Randomly select indexes for augmentation
 
         Args:
@@ -56,12 +102,12 @@ class BaseAug(ABC):
         Returns:
             List[int]: List of indices.
         """
-        aug_count = self._augs_count(len(inputs), rate)
+        aug_count = self.__augs_count(len(inputs), rate)
         if clip:
             aug_count = max(aug_count, self.min_aug)
             aug_count = min(aug_count, self.max_aug)
 
-        aug_idxs = self._get_random_idx(inputs, aug_count)
+        aug_idxs = self.__get_random_idx(inputs, aug_count)
 
         return aug_idxs
 

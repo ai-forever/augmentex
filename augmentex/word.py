@@ -1,11 +1,12 @@
 import os
 import re
-import json
-from typing import List
+from typing import List, Union
 
 import numpy as np
 
 from augmentex.base import BaseAug
+from augmentex.preprocessor import ComputeStatistic
+from augmentex.variables import WORD_ACTIONS
 
 
 class WordAug(BaseAug):
@@ -16,33 +17,41 @@ class WordAug(BaseAug):
         min_aug: int = 1,
         max_aug: int = 5,
         unit_prob: float = 0.3,
+        random_seed: int = None,
+        lang: str = "rus",
+        platform: str = "pc",
+        correct_texts_path: Union[str, None] = None,
+        error_texts_path: Union[str, None] = None,
     ) -> None:
         """
         Args:
             min_aug (int, optional): The minimum amount of augmentation. Defaults to 1.
             max_aug (int, optional): The maximum amount of augmentation. Defaults to 5.
             unit_prob (float, optional): Percentage of the phrase to which augmentations will be applied. Defaults to 0.3.
+            random_seed (int, optional): Random seed. Default to None.
+            lang (str, optional): Language of texts. Default to 'rus'.
+            platform (str, optional): Type of platform where statistic was collected. Defaults to 'pc'.
+            correct_texts_path (str, optional): Path to txt file with correct texts. Defaults to None.
+            error_texts_path (str, optional): Path to txt file with error texts. Default to None.
         """
-        super().__init__(min_aug=min_aug, max_aug=max_aug)
+        super().__init__(min_aug=min_aug, max_aug=max_aug,
+                         random_seed=random_seed, lang=lang, platform=platform)
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
-        with open(os.path.join(dir_path, "static_data", "stopwords_ru.json")) as f:
-            self.stopwords = json.load(f)
-        with open(os.path.join(dir_path, "static_data", "orfo_ru_words.json")) as f:
-            self.orfo_words = json.load(f)
-        with open(os.path.join(dir_path, "static_data", "text2emoji_ru.json")) as f:
-            self.text2emoji_map = json.load(f)
+        self.stopwords = self._read_json(os.path.join(
+            dir_path, "static_data", self.lang, "stopwords.json"))
+        self.text2emoji_map = self._read_json(os.path.join(
+            dir_path, "static_data", self.lang, "text2emoji.json"))
+
+        if correct_texts_path is not None or error_texts_path is not None:
+            cs = ComputeStatistic(correct_texts_path,
+                                  error_texts_path, self.lang)
+            self.orfo_dict = cs.compute_word_statistic()
+        else:
+            self.orfo_dict = self._read_json(os.path.join(
+                dir_path, "static_data", self.lang, self.platform, "orfo_words.json"))
 
         self.unit_prob = unit_prob
-        self.__actions = [
-            "replace",
-            "delete",
-            "swap",
-            "stopword",
-            "reverse",
-            "text2emoji",
-            "split",
-        ]
 
     @property
     def actions_list(self) -> List[str]:
@@ -51,9 +60,9 @@ class WordAug(BaseAug):
             List[str]: A list of possible methods.
         """
 
-        return self.__actions
+        return WORD_ACTIONS
 
-    def _reverse_case(self, word: str) -> str:
+    def __reverse_case(self, word: str) -> str:
         """Changes the case of the first letter to the reverse.
 
         Args:
@@ -70,7 +79,7 @@ class WordAug(BaseAug):
 
         return word
 
-    def _text2emoji(self, word: str) -> str:
+    def __text2emoji(self, word: str) -> str:
         """Replace word to emoji.
 
         Args:
@@ -85,7 +94,7 @@ class WordAug(BaseAug):
 
         return "".join(word)
 
-    def _split(self, word: str) -> str:
+    def __split(self, word: str) -> str:
         """Divides a word character-by-character.
 
         Args:
@@ -98,7 +107,7 @@ class WordAug(BaseAug):
 
         return word
 
-    def _replace(self, word: str) -> str:
+    def __replace(self, word: str) -> str:
         """Replaces a word with the correct spelling with a word with spelling errors.
 
         Args:
@@ -108,12 +117,12 @@ class WordAug(BaseAug):
             str: A misspelled word.
         """
         word = re.findall("[а-яА-ЯёЁa-zA-Z0-9']+|[.,!?;]+", word)
-        word_probas = self.orfo_words.get(word[0].lower(), [[word[0]], [1.0]])
+        word_probas = self.orfo_dict.get(word[0].lower(), [[word[0]], [1.0]])
         word[0] = np.random.choice(word_probas[0], p=word_probas[1])
 
         return "".join(word)
 
-    def _delete(self) -> str:
+    def __delete(self) -> str:
         """Deletes a random word.
 
         Returns:
@@ -122,7 +131,7 @@ class WordAug(BaseAug):
 
         return ""
 
-    def _stopword(self, word: str) -> str:
+    def __stopword(self, word: str) -> str:
         """Adds a stop word before the word.
 
         Args:
@@ -136,16 +145,25 @@ class WordAug(BaseAug):
         return " ".join([stopword, word])
 
     def augment(self, text: str, action: str = None) -> str:
+        """Modifies the phrase according to the action.
+
+        Args:
+            text (str): Text phrase.
+            action (str, optional): The action to apply to the phrase.
+
+        Returns:
+            str: Modified phrase.
+        """
         if action is None:
-            action = np.random.choice(self.__actions)
+            action = np.random.choice(WORD_ACTIONS)
 
         aug_sent_arr = text.split()
         aug_idxs = self._aug_indexing(aug_sent_arr, self.unit_prob, clip=True)
         for idx in aug_idxs:
             if action == "delete":
-                aug_sent_arr[idx] = self._delete()
+                aug_sent_arr[idx] = self.__delete()
             elif action == "reverse":
-                aug_sent_arr[idx] = self._reverse_case(aug_sent_arr[idx])
+                aug_sent_arr[idx] = self.__reverse_case(aug_sent_arr[idx])
             elif action == "swap":
                 swap_idx = np.random.randint(0, len(aug_sent_arr) - 1)
                 aug_sent_arr[swap_idx], aug_sent_arr[idx] = (
@@ -153,13 +171,13 @@ class WordAug(BaseAug):
                     aug_sent_arr[swap_idx],
                 )
             elif action == "stopword":
-                aug_sent_arr[idx] = self._stopword(aug_sent_arr[idx])
+                aug_sent_arr[idx] = self.__stopword(aug_sent_arr[idx])
             elif action == "replace":
-                aug_sent_arr[idx] = self._replace(aug_sent_arr[idx])
+                aug_sent_arr[idx] = self.__replace(aug_sent_arr[idx])
             elif action == "text2emoji":
-                aug_sent_arr[idx] = self._text2emoji(aug_sent_arr[idx])
+                aug_sent_arr[idx] = self.__text2emoji(aug_sent_arr[idx])
             elif action == "split":
-                aug_sent_arr[idx] = self._split(aug_sent_arr[idx])
+                aug_sent_arr[idx] = self.__split(aug_sent_arr[idx])
             else:
                 raise NameError(
                     """These type of augmentation is not available, please check EDAAug.actions_list() to see
