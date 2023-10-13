@@ -40,7 +40,7 @@ class CharAug(BaseAug):
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
         self.typo_dict = self._read_json(os.path.join(
-            dir_path, "static_data", "typos_chars.json"))
+            dir_path, "static_data", f"{self.platform}_typos_chars.json"))
         self.shift_dict = self._read_json(
             os.path.join(dir_path, "static_data", "shift.json"))
         self.vocab = self._read_json(os.path.join(
