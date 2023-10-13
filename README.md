@@ -25,6 +25,7 @@ and in this 🗣️[Talk](https://youtu.be/yFfkV0Qjuu0?si=XmKfocCSLnKihxS_).
     - [**Character level**](#character-level)
     - [**Batch processing**](#batch-processing)
     - [**Compute your own statistics**](#compute-your-own-statistics)
+    - [**Google Colab example**](#google-colab-example)
   - [Contributing](#contributing)
     - [Issue](#issue)
     - [Pull request](#pull-request)
@@ -258,6 +259,9 @@ word_aug = WordAug(
     error_texts_path="error_texts.txt",
     )
 ```
+
+### **Google Colab example**
+You can familiarize yourself with the usage in the example [![Try In Colab!](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1azYUsAd1ofvBI_sPrMftX_ioaspvjEOg?usp=sharing)
 
 ## Contributing
 ### Issue
