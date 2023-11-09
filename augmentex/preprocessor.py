@@ -200,6 +200,52 @@ class ComputeStatistic():
 
         return char_statistic
 
+    def __compute_ngram_statistic(self, pairs: List[Tuple[str, str]], n: int = 3) -> Dict[str, List[Union[List[str], List[float]]]]:
+        """From pairs of words , it compiles statistics on the use of ngrams with errors.
+
+        Args:
+            pairs (List[Tuple[str, str]]): List with pairs of words.
+
+        Returns:
+            Dict[str, List[Union[List[str], List[float]]]]: Statistics for Augmentex.
+        """
+        unique_pairs = list(set(pairs))
+        ngram_pairs = []
+        for pair in unique_pairs:
+            true_word = pair[0]
+            broke_word = pair[1]
+            if len(true_word) == len(broke_word):
+                if len(true_word) < n:
+                    continue
+                true_word_ngram = [true_word[i:i+n]
+                                   for i in range(len(true_word)-n+1)]
+                broke_word_ngram = [broke_word[i:i+n]
+                                    for i in range(len(broke_word)-n+1)]
+                for gram_id in range(len(true_word_ngram)):
+                    if true_word_ngram[gram_id] != broke_word_ngram[gram_id]:
+                        ngram_pairs.append(
+                            (true_word_ngram[gram_id], broke_word_ngram[gram_id]))
+
+        count_ngram_pairs = defaultdict(int)
+        for pair in ngram_pairs:
+            count_ngram_pairs[f"{pair[0]}_{pair[1]}"] += 1
+
+        ngram_statistic = {}
+        for pair in list(count_ngram_pairs.items()):
+            true_gram = pair[0].split("_")[0]
+            broke_gram = pair[0].split("_")[1]
+            count = pair[1]
+            if ngram_statistic.get(true_gram, False):
+                ngram_statistic[true_gram][0].append(broke_gram)
+                ngram_statistic[true_gram][1].append(count)
+            else:
+                ngram_statistic[true_gram] = [[broke_gram], [count]]
+
+        for item in ngram_statistic.items():
+            item[1][1] = [float(i)/sum(item[1][1]) for i in item[1][1]]
+
+        return ngram_statistic
+
     def compute_char_statistic(self) -> Dict[str, List[Union[List[str], List[float]]]]:
         """Calculates char statistics.
 
@@ -227,21 +273,6 @@ class ComputeStatistic():
         pairs = self.__filter(preprocess_correct_texts, preprocess_error_texts)
 
         word_statistic = self.__compute_word_statistic(pairs)
+        ngram_statistic = self.__compute_ngram_statistic(pairs)
 
-        return word_statistic
-
-    def compute_statistic(self) -> Tuple[Dict[str, List[Union[List[str], List[float]]]], Dict[str, List[float]]]:
-        """Calculates both statistics.
-
-        Returns:
-            Tuple[Dict[str, List[Union[List[str], List[float]]]], Dict[str, List[float]]]: Statistics for Augmentex.
-        """
-        preprocess_correct_texts = self.__preprocess(self.correct_texts)
-        preprocess_error_texts = self.__preprocess(self.error_texts)
-
-        pairs = self.__filter(preprocess_correct_texts, preprocess_error_texts)
-
-        word_statistic = self.__compute_word_statistic(pairs)
-        char_statistic = self.__compute_char_statistic(pairs)
-
-        return word_statistic, char_statistic
+        return word_statistic, ngram_statistic

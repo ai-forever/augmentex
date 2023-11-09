@@ -46,10 +46,12 @@ class WordAug(BaseAug):
         if correct_texts_path is not None or error_texts_path is not None:
             cs = ComputeStatistic(correct_texts_path,
                                   error_texts_path, self.lang)
-            self.orfo_dict = cs.compute_word_statistic()
+            self.orfo_dict, self.ngram_dict = cs.compute_word_statistic()
         else:
             self.orfo_dict = self._read_json(os.path.join(
                 dir_path, "static_data", self.lang, self.platform, "orfo_words.json"))
+            self.ngram_dict = self._read_json(os.path.join(
+                dir_path, "static_data", self.lang, self.platform, "orfo_ngrams.json"))
 
         self.unit_prob = unit_prob
 
@@ -61,6 +63,18 @@ class WordAug(BaseAug):
         """
 
         return WORD_ACTIONS
+
+    def __ngram(self, word: str, n: int = 3) -> str:
+        if len(word) > 3:
+            word_ngrams = [word[i:i+n] for i in range(len(word)-n+1)]
+            random_ngram = np.random.choice(word_ngrams)
+            ngram_probas = self.ngram_dict.get(
+                random_ngram.lower(), [[random_ngram], [1.0]])
+            ngram_for_replace = np.random.choice(
+                ngram_probas[0], p=ngram_probas[1])
+            word = word.replace(random_ngram, ngram_for_replace)
+
+        return word
 
     def __reverse_case(self, word: str) -> str:
         """Changes the case of the first letter to the reverse.
@@ -172,6 +186,8 @@ class WordAug(BaseAug):
                 )
             elif action == "stopword":
                 aug_sent_arr[idx] = self.__stopword(aug_sent_arr[idx])
+            elif action == "ngram":
+                aug_sent_arr[idx] = self.__ngram(aug_sent_arr[idx])
             elif action == "replace":
                 aug_sent_arr[idx] = self.__replace(aug_sent_arr[idx])
             elif action == "text2emoji":
