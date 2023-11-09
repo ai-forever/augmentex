@@ -130,6 +130,13 @@ word_aug.augment(text=text, action="text2emoji")
 # Screw you guys, I am going home. (c)
 ```
 
+8. Replaces ngram in a word with erroneous ones.
+```python
+text = "Screw you guys, I am going home. (c)"
+word_aug.augment(text=text, action="ngram")
+# Scren you guys, I am going home. (c)
+```
+
 ### **Character level**
 ```python
 from augmentex import CharAug
@@ -220,30 +227,33 @@ word_aug.aug_batch(text_list, batch_prob=0.5, action="replace") # with action
 📊 If you want to use your own statistics for the _replace_ and _orfo_ methods, then you will need to specify two paths to parallel corpora with texts without errors and with errors.
 
 Example of txt files:
-<table>
-<tr>
+<table style="width: 100%;">
+<tbody style="
+"><tr style="
+">
 <th> texts_without_errors.txt </th>
 <th> texts_with_errors.txt </th>
 </tr>
-<tr>
-<td>
-
-some text without errors 1</br>
-some text without errors 2</br>
-some text without errors 3</br>
-...
-
+<tr style="
+">
+<td style="
+    width: 1%;
+">
+<p dir="auto">some text without errors 1<br>
+some text without errors 2<br>
+some text without errors 3<br>
+...</p>
 </td>
-<td>
-
-some text with errors 1</br>
-some text with errors 2</br>
-some text with errors 3</br>
-...
-
+<td style="
+    width: 1%;
+">
+<p dir="auto">some text with errors 1<br>
+some text with errors 2<br>
+some text with errors 3<br>
+...</p>
 </td>
 </tr>
-</table>
+</tbody></table>
 
 ```python
 from augmentex import WordAug
