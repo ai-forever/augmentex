@@ -3,7 +3,7 @@ from glob import glob
 
 setup(
     name="augmentex",
-    version="1.1.0",
+    version="1.2.0",
     author="Mark Baushenko and Alexandr Abramov",
     author_email="m.baushenko@gmail.com",
     description="Augmentex — a library for augmenting texts with errors",
