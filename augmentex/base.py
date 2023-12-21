@@ -1,9 +1,14 @@
 import random
 import json
+import re
 from abc import ABC, abstractmethod
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Set
 
+import pymorphy2
 import numpy as np
+import numpy.typing as npt
+from sklearn.metrics.pairwise import cosine_similarity
+from nltk.corpus import stopwords
 
 from augmentex.variables import SUPPORT_LANGUAGES, SUPPORT_PLATFORMS
 
@@ -137,3 +142,288 @@ class BaseAug(ABC):
     @abstractmethod
     def augment(self, text, action):
         pass
+
+
+class AttackBase(ABC):
+    """A base class that combines methods independent of the PyTorch or TensorFlow training framework.
+    """
+
+    def __init__(self, observer_model, syn_dict: Dict[str, List[str]], p_phrase: float) -> None:
+        """
+        Args:
+            observer_model (_type_): _description_
+            syn_dict (Dict[str, List[str]]): A dictionary with synonyms for each word. It should be in the form of:
+                {'word_1': ['syn_1', 'syn_2', ..., 'syn_N'],
+                'word_2': ['syn_1', 'syn_2', ..., 'syn_N'],
+                ...}
+            p_phrase (float): Percentage of the phrase to which the algorithm will be applied.
+        """
+        if not hasattr(observer_model, "get_embedding"):
+            raise NameError(
+                """For the algorithm to work correctly, your model class must contain a method called 'get_embedding', 
+                which takes Union[str, List[str]] as input and returns a vector (tensor) of the dimension of the hidden state of your model.""")
+        if not isinstance(syn_dict, dict):
+            raise TypeError("syn_dict should be dict type.")
+        if not isinstance(p_phrase, float):
+            raise TypeError("Works only with Float type from 0 to 1")
+        if p_phrase <= 0.0:
+            raise ValueError("Work with Positive Numbers Only")
+        if p_phrase > 1.0:
+            p_phrase = 1.0
+            print("Your p_phrase value was greater than 1.0, so it is now 1.0.")
+
+        self.observer_model = observer_model
+        self.p_phrase = p_phrase
+        self.russian_stopwords = set(stopwords.words("russian"))
+        self.syn_dict = syn_dict
+        self.morph = pymorphy2.MorphAnalyzer()
+
+    def clear_string(self, text: str) -> str:
+        """Leaves only symbols, numbers and punctuation marks in the text.
+
+        Args:
+            text (str): Source text.
+
+        Returns:
+            str: Cleared text.
+        """
+        text = re.sub(r"[^\w\s]", "", text)
+
+        return text
+
+    def get_top_damage_word(self, cnds: List[List[str]], ids: List[npt.NDArray[np.int_]]) -> List[List[str]]:
+        """A function that selects the best candidates based on the obtained indexes and clears them of stop words.
+
+        Args:
+            cnds (List[List[str]]): A list of batch size length that stores lists with candidates for replacement.
+            ids (List[npt.NDArray[np.int_]]): A list of batch size length that stores lists with indexes of words making the greatest contribution to the sentence. 
+                Sorted by descending contribution.
+
+        Returns:
+            List[List[str]]: A list of batch size length that stores lists with the best candidates for replacement in the order of 'ids'.
+        """
+        new_cnds = []
+        for i, cnd in enumerate(cnds):
+            tmp_lst = np.array(cnd)[ids[i]]
+            tmp_lst = [c for c in tmp_lst if c not in self.russian_stopwords]
+            new_cnds.append(tmp_lst)
+
+        return new_cnds
+
+    def choose_damage_words(self, text: List[str], target_model) -> List[List[str]]:
+        """A function that searches for the best candidates in a replacement offer.
+
+        Args:
+            text (List[str]): A list of batch size length that stores source text.
+            target_model (_type_): _description_
+
+        Returns:
+            List[List[str]]: A list of batch size length that stores lists with the best candidates for replacement in the order of 'ids'.
+        """
+        text_clear = [self.clear_string(txt) for txt in text]
+        cnds = [txt.split() for txt in text_clear]
+        ids = self.iterate_words_score(cnds, text_clear, target_model)
+
+        return self.get_top_damage_word(cnds, ids)
+
+    def get_inflect(self, word: str, inflect_rules: Set[str]) -> Union[str, None]:
+        """A function that puts a word in the desired form based on the rules.
+
+        Args:
+            word (str): The word in the initial form.
+            inflect_rules (Set[str]): Rules for forming words derived from Pymorphy2.
+
+        Returns:
+            Union[str, None]: A word in the right form or None if it could not be converted.
+        """
+        try:
+            p = self.morph.parse(word)[0]
+            return p.inflect(inflect_rules)[0]
+        except:
+            return None
+
+    def get_synonims(self, cnds: List[str]) -> Dict[str, List[str]]:
+        """A function that searches for synonyms for each word in the list.
+
+        Args:
+            cnds (List[str]): A list containing the words candidates for replacement.
+
+        Returns:
+            Dict[str, List[str]]: A dictionary where the keys are candidate words to replace, and the values are a list of synonyms for each candidate.
+        """
+        dct_cnd_syn = {c: [] for c in cnds}
+        syns_keys = set(self.syn_dict.keys())
+
+        for cand in cnds:
+            p = self.morph.parse(cand)[0]
+            cand_norm = p.normal_form
+            try:
+                if cand_norm in syns_keys:
+                    norm_pos = self.morph.parse(cand_norm)[0].tag.POS
+                    cand_poses = [p.tag.POS, p.tag.animacy, p.tag.aspect, p.tag.case, p.tag.gender, p.tag.involvement,
+                                  p.tag.mood, p.tag.number, p.tag.person, p.tag.tense, p.tag.transitivity, p.tag.voice]
+                    inflect_rules = {l for l in cand_poses if l != None}
+
+                    syns = self.syn_dict[cand_norm]
+                    syn_cnt = len(syns)
+                    syn_cand_pos = [str(self.morph.parse(s)[0].tag.POS)
+                                    for s in syns]
+                    syns_pos = [syns[i] for i in range(
+                        syn_cnt) if syn_cand_pos[i] == norm_pos]
+
+                    ids_cs = self.get_top_nearest_words(cand, syns_pos)
+                    dct_cnd_syn[cand] = [s for s in np.array(syns)[ids_cs]]
+                    dct_cnd_syn[cand] = [self.get_inflect(
+                        s, inflect_rules) for s in dct_cnd_syn[cand]]
+                    dct_cnd_syn[cand] = [c for c in dct_cnd_syn[cand] if c != None and len(
+                        c.split('-')) == 1 and len(c.split()) == 1]
+                else:
+                    continue
+            except:
+                continue
+
+        return dct_cnd_syn
+
+    def get_change_hard_word2sentence(self, text: str, dct_cnd_syn: Dict[str, List[str]]) -> List[str]:
+        """A function that generates sentences with possible substitutions.
+
+        Args:
+            text (str): Original sentence.
+            dct_cnd_syn (Dict[str, List[str]]): A dictionary where the keys are candidate words to replace, and the values are a list of synonyms for each candidate.
+
+        Returns:
+            List[str]: List of sentences with possible replacements.
+        """
+        hard_strs = []
+        for key in dct_cnd_syn.keys():
+            for s in dct_cnd_syn[key]:
+                if s == '':
+                    continue
+                else:
+                    st_ch = text.replace(key, s)
+                    hard_strs.append(st_ch)
+
+        return hard_strs
+
+    def paraphrase(self, text: List[str], target_model) -> List[str]:
+        """
+        Args:
+            text (List[str]): Original sentence.
+            target_model (_type_): _description_
+
+        Returns:
+            List[str]: The final sentences that will be instead of the original ones.
+        """
+        cnds_s = self.choose_damage_words(text, target_model)
+        dct_s = [self.get_synonims(cnds) for cnds in cnds_s]
+        dct_s = [{k: v for k, v in d.items() if len(v) != 0} for d in dct_s]
+
+        result = []
+        for i, d in enumerate(dct_s):
+            if len(d) == 0:
+                result.append(text[i])
+                continue
+            else:
+                p_h = self.get_change_hard_word2sentence(text[i], d)
+                adv_cands = self.original2advers_sim(text[i], p_h)
+
+            if len(adv_cands) != 0:
+                result.append(np.random.choice(adv_cands))
+            else:
+                result.append(text[i])
+                continue
+
+        return result
+
+    def get_top_nearest_words(self, word: str, syns: List[str]) -> npt.NDArray[np.int_]:
+        """
+        Args:
+            word (str): The original word.
+            syns (List[str]): A list of words in which we will look for similar ones.
+
+        Returns:
+            npt.NDArray[np.int_]: Indexes of the nearest words.
+        """
+        scores = -1 * cosine_similarity(self.get_embedding_cpu(
+            self.observer_model, word), self.get_embedding_cpu(self.observer_model, syns))[0]
+        len_s = len(scores)
+        top = int(len_s * 0.5) if int(len_s * 0.5) > 1 else int(len_s * 0.75)
+
+        return np.argsort(scores)[:top]
+
+    def original2advers_sim(self, text: str, p_h: List[str]) -> List[str]:
+        """A function that selects 25% of the best sentences for replacement.
+
+        Args:
+            text (str): Original sentence.
+            p_h (List[str]): List of sentences with possible replacements.
+
+        Returns:
+            List[str]: List of sentences with best possible replacements.
+        """
+        scores = -1 * cosine_similarity(self.get_embedding_cpu(
+            self.observer_model, text), self.get_embedding_cpu(self.observer_model, p_h))[0]
+        top = int(len(p_h) * 0.25)
+        ids_cs = np.argsort(scores)[:top]
+
+        return [s for s in np.array(p_h)[ids_cs]]
+
+
+class EncoderAttackBase(AttackBase):
+    def __init__(self, observer_model, syn_dict: Dict[str, List[str]], p_phrase: float = 0.5) -> None:
+        super().__init__(observer_model, syn_dict, p_phrase)
+
+    def iterate_words_score(self, cnds: List[List[str]], text_clear: List[str], target_model) -> List[npt.NDArray[np.int_]]:
+        """A function that counts the contribution of each candidate in a sentence and returns the top len(sentences) * p_phrase of candidate indexes.
+
+        Args:
+            cnds (List[List[str]]): A batch size list that stores lists with all candidates for each offer.
+            text_clear (List[str]): List of initial sentences.
+            target_model (_type_): _description_
+
+        Returns:
+            List[npt.NDArray[np.int_]]: Indexes of the best candidates.
+        """
+        text_clr_embs = self.get_embedding_cpu(target_model, text_clear)
+
+        texts_wo_cnd = []
+        for i, txt in enumerate(text_clear):
+            tmp_list = []
+            for cnd in cnds[i]:
+                tmp_list.append(txt.replace(
+                    cnd, "").replace("  ", " ").strip(" "))
+            texts_wo_cnd.append(tmp_list)
+        texts_wo_cnd_embs = [self.get_embedding_cpu(
+            target_model, text_wo_cnd) for text_wo_cnd in texts_wo_cnd]
+        scores = [cosine_similarity([text_clr_embs[i]], texts_wo_cnd_embs[i])[
+            0] for i in range(len(text_clear))]
+
+        return [np.argsort(score)[:min(int(len(score) * self.p_phrase) + 1, len(score))] for score in scores]
+
+
+class DecoderAttackBase(AttackBase):
+    def __init__(self, observer_model, syn_dict: Dict[str, List[str]], p_phrase: float = 0.5) -> None:
+        super().__init__(observer_model, syn_dict, p_phrase)
+
+    def iterate_words_score(self, cnds: List[List[str]], text_clear: List[str], target_model) -> List[npt.NDArray[np.int_]]:
+        """A function that counts the contribution of each candidate in a sentence and returns the top len(sentences) * p_phrase of candidate indexes.
+
+        Args:
+            cnds (List[List[str]]): A batch size list that stores lists with all candidates for each offer.
+            text_clear (List[str]): List of initial sentences.
+            target_model (_type_): _description_
+
+        Returns:
+            List[npt.NDArray[np.int_]]: Indexes of the best candidates.
+        """
+        texts_wo_cnd = []
+        for i, txt in enumerate(text_clear):
+            tmp_list = []
+            for cnd in cnds[i]:
+                tmp_list.append(txt.replace(
+                    cnd, "").replace("  ", " ").strip(" "))
+            texts_wo_cnd.append(tmp_list)
+        texts_wo_cnd_ppl = [self.get_perplexity(
+            target_model, text_wo_cnd) for text_wo_cnd in texts_wo_cnd]
+
+        return [np.flip(np.argsort(text_wo_cnd_ppl)[:min(int(len(text_wo_cnd_ppl) * self.p_phrase) + 1, len(text_wo_cnd_ppl))]) for text_wo_cnd_ppl in texts_wo_cnd_ppl]

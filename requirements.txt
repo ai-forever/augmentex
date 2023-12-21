@@ -1,2 +1,7 @@
 numpy>=1.21
 python-Levenshtein>=0.22.0
+pymorphy2==0.9.1
+scikit-learn==1.2.2
+nltk==3.8.1
+torch==2.0.0
+evaluate==0.4.1
