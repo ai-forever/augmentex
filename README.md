@@ -3,7 +3,7 @@
     <img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg">
     </a>
     <a href="https://github.com/ai-forever/augmentex/releases">
-    <img alt="Release" src="https://img.shields.io/badge/release-v1.0.0-blue">
+    <img alt="Release" src="https://img.shields.io/badge/release-v1.2.1-blue">
     </a>
     <a href="https://arxiv.org/abs/2308.09435">
     <img alt="Paper" src="https://img.shields.io/badge/arXiv-2308.09435-red">
