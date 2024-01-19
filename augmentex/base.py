@@ -153,8 +153,8 @@ class AttackBase(ABC):
         Args:
             observer_model (_type_): _description_
             syn_dict (Dict[str, List[str]]): A dictionary with synonyms for each word. It should be in the form of:
-                {'word_1': ['syn_1', 'syn_2', ..., 'syn_N'],
-                'word_2': ['syn_1', 'syn_2', ..., 'syn_N'],
+                {'word_1': ['syn_11', 'syn_12', ..., 'syn_1N'],
+                'word_2': ['syn_21', 'syn_22', ..., 'syn_2N'],
                 ...}
             p_phrase (float): Percentage of the phrase to which the algorithm will be applied.
         """
@@ -210,7 +210,7 @@ class AttackBase(ABC):
 
         return new_cnds
 
-    def choose_damage_words(self, text: List[str], target_model) -> List[List[str]]:
+    def choose_damage_words(self, target_model, text: List[str], label) -> List[List[str]]:
         """A function that searches for the best candidates in a replacement offer.
 
         Args:
@@ -222,7 +222,7 @@ class AttackBase(ABC):
         """
         text_clear = [self.clear_string(txt) for txt in text]
         cnds = [txt.split() for txt in text_clear]
-        ids = self.iterate_words_score(cnds, text_clear, target_model)
+        ids = self.iterate_words_score(target_model, cnds, text_clear, label)
 
         return self.get_top_damage_word(cnds, ids)
 
@@ -305,7 +305,7 @@ class AttackBase(ABC):
 
         return hard_strs
 
-    def paraphrase(self, text: List[str], target_model) -> List[str]:
+    def paraphrase(self, target_model, text: List[str], label) -> List[str]:
         """
         Args:
             text (List[str]): Original sentence.
@@ -314,7 +314,7 @@ class AttackBase(ABC):
         Returns:
             List[str]: The final sentences that will be instead of the original ones.
         """
-        cnds_s = self.choose_damage_words(text, target_model)
+        cnds_s = self.choose_damage_words(target_model, text, label)
         dct_s = [self.get_synonims(cnds) for cnds in cnds_s]
         dct_s = [{k: v for k, v in d.items() if len(v) != 0} for d in dct_s]
 
@@ -371,59 +371,55 @@ class AttackBase(ABC):
 
 class EncoderAttackBase(AttackBase):
     def __init__(self, observer_model, syn_dict: Dict[str, List[str]], p_phrase: float = 0.5) -> None:
+        """
+        Args:
+            observer_model (_type_): _description_
+            syn_dict (Dict[str, List[str]]): A dictionary with synonyms for each word. It should be in the form of:
+                {'word_1': ['syn_1', 'syn_2', ..., 'syn_N'],
+                'word_2': ['syn_1', 'syn_2', ..., 'syn_N'],
+                ...}
+            p_phrase (float, optional): Percentage of the phrase to which the algorithm will be applied. Defaults to 0.5.
+        """
         super().__init__(observer_model, syn_dict, p_phrase)
 
-    def iterate_words_score(self, cnds: List[List[str]], text_clear: List[str], target_model) -> List[npt.NDArray[np.int_]]:
-        """A function that counts the contribution of each candidate in a sentence and returns the top len(sentences) * p_phrase of candidate indexes.
+    def get_embedding_cpu(self, model, batch_text: Union[str, List[str]]) -> npt.NDArray[np.float32]:
+        """A function that calculate a embedding of text and moves it into RAM.
 
         Args:
-            cnds (List[List[str]]): A batch size list that stores lists with all candidates for each offer.
-            text_clear (List[str]): List of initial sentences.
-            target_model (_type_): _description_
+            model (_type_): _description_
+            batch_text (Union[str, List[str]]): The text or list of texts to calculate embedding for.
 
         Returns:
-            List[npt.NDArray[np.int_]]: Indexes of the best candidates.
+            npt.NDArray[np.float32]: Embedding texts.
         """
-        text_clr_embs = self.get_embedding_cpu(target_model, text_clear)
+        embs = model.get_embedding(batch_text).cpu().numpy()
 
-        texts_wo_cnd = []
-        for i, txt in enumerate(text_clear):
-            tmp_list = []
-            for cnd in cnds[i]:
-                tmp_list.append(txt.replace(
-                    cnd, "").replace("  ", " ").strip(" "))
-            texts_wo_cnd.append(tmp_list)
-        texts_wo_cnd_embs = [self.get_embedding_cpu(
-            target_model, text_wo_cnd) for text_wo_cnd in texts_wo_cnd]
-        scores = [cosine_similarity([text_clr_embs[i]], texts_wo_cnd_embs[i])[
-            0] for i in range(len(text_clear))]
-
-        return [np.argsort(score)[:min(int(len(score) * self.p_phrase) + 1, len(score))] for score in scores]
+        return embs
 
 
 class DecoderAttackBase(AttackBase):
     def __init__(self, observer_model, syn_dict: Dict[str, List[str]], p_phrase: float = 0.5) -> None:
+        """
+        Args:
+            observer_model (_type_): _description_
+            syn_dict (Dict[str, List[str]]): A dictionary with synonyms for each word. It should be in the form of:
+                {'word_1': ['syn_1', 'syn_2', ..., 'syn_N'],
+                'word_2': ['syn_1', 'syn_2', ..., 'syn_N'],
+                ...}
+            p_phrase (float, optional): Percentage of the phrase to which the algorithm will be applied. Defaults to 0.5.
+        """
         super().__init__(observer_model, syn_dict, p_phrase)
 
-    def iterate_words_score(self, cnds: List[List[str]], text_clear: List[str], target_model) -> List[npt.NDArray[np.int_]]:
-        """A function that counts the contribution of each candidate in a sentence and returns the top len(sentences) * p_phrase of candidate indexes.
+    def get_embedding_cpu(self, model, batch_text: Union[str, List[str]]) -> npt.NDArray[np.float32]:
+        """A function that calculate a embedding of text and moves it into RAM.
 
         Args:
-            cnds (List[List[str]]): A batch size list that stores lists with all candidates for each offer.
-            text_clear (List[str]): List of initial sentences.
-            target_model (_type_): _description_
+            model (_type_): _description_
+            batch_text (Union[str, List[str]]): The text or list of texts to calculate embedding for.
 
         Returns:
-            List[npt.NDArray[np.int_]]: Indexes of the best candidates.
+            npt.NDArray[np.float32]: Embedding texts.
         """
-        texts_wo_cnd = []
-        for i, txt in enumerate(text_clear):
-            tmp_list = []
-            for cnd in cnds[i]:
-                tmp_list.append(txt.replace(
-                    cnd, "").replace("  ", " ").strip(" "))
-            texts_wo_cnd.append(tmp_list)
-        texts_wo_cnd_ppl = [self.get_perplexity(
-            target_model, text_wo_cnd) for text_wo_cnd in texts_wo_cnd]
+        embs = model.get_embedding(batch_text).cpu().numpy()
 
-        return [np.flip(np.argsort(text_wo_cnd_ppl)[:min(int(len(text_wo_cnd_ppl) * self.p_phrase) + 1, len(text_wo_cnd_ppl))]) for text_wo_cnd_ppl in texts_wo_cnd_ppl]
+        return embs
