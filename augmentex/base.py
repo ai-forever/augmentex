@@ -45,7 +45,7 @@ class BaseAug(ABC):
         Returns:
             Dict: dict with data.
         """
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             data = json.load(f)
 
         return data

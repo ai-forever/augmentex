@@ -102,7 +102,7 @@ class WordAug(BaseAug):
         Returns:
             str: Emoji that matches this word.
         """
-        word = re.findall("[а-яА-ЯёЁa-zA-Z0-9']+|[.,!?;]+", word)
+        word = re.findall("[а-яА-ЯёЁa-zA-Z0-9']+|[.,!?;-]+", word)
         words = self.text2emoji_map.get(word[0].lower(), [word[0]])
         word[0] = np.random.choice(words)
 
