@@ -102,11 +102,13 @@ class WordAug(BaseAug):
         Returns:
             str: Emoji that matches this word.
         """
-        word = re.findall("[а-яА-ЯёЁa-zA-Z0-9']+|[.,!?;-]+", word)
-        words = self.text2emoji_map.get(word[0].lower(), [word[0]])
-        word[0] = np.random.choice(words)
+        tokens = re.findall("[а-яА-ЯёЁa-zA-Z0-9']+|[.,!?;-]+", word)
+        if not tokens:
+            return word
+        words = self.text2emoji_map.get(tokens[0].lower(), [tokens[0]])
+        tokens[0] = np.random.choice(words)
 
-        return "".join(word)
+        return "".join(tokens)
 
     def __split(self, word: str) -> str:
         """Divides a word character-by-character.
@@ -130,11 +132,13 @@ class WordAug(BaseAug):
         Returns:
             str: A misspelled word.
         """
-        word = re.findall("[а-яА-ЯёЁa-zA-Z0-9']+|[.,!?;]+", word)
-        word_probas = self.orfo_dict.get(word[0].lower(), [[word[0]], [1.0]])
-        word[0] = np.random.choice(word_probas[0], p=word_probas[1])
+        tokens = re.findall("[а-яА-ЯёЁa-zA-Z0-9']+|[.,!?;]+", word)
+        if not tokens:
+            return word
+        word_probas = self.orfo_dict.get(tokens[0].lower(), [[tokens[0]], [1.0]])
+        tokens[0] = np.random.choice(word_probas[0], p=word_probas[1])
 
-        return "".join(word)
+        return "".join(tokens)
 
     def __delete(self) -> str:
         """Deletes a random word.
